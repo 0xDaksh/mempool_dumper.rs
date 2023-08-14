@@ -35,7 +35,7 @@ async fn main() {
         println!("{:?}", tx.hash);
         entries.push(TxEntry::new(tx));
 
-        if entries.len() > BATCH_SIZE {
+        if entries.len() >= BATCH_SIZE {
             println!("Dumping {} transactions!", BATCH_SIZE);
             process_batch(&mut entries, &mut main_df, filename.as_str());
             println!("Dumped to csv!");

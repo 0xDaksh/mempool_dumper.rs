@@ -2,6 +2,13 @@ use polars::prelude::{CsvWriter, DataFrame, NamedFrom, PolarsResult, SerWriter, 
 
 use crate::tx_entry::TxEntry;
 
+#[derive(Debug)]
+enum FileError {
+    FileWritingFailed,
+    CsvWritingFailed,
+    UnknownFileFormat,
+}
+
 pub fn process_batch(entries: &mut Vec<TxEntry>, main_df: &mut DataFrame, filename: &str) {
     let new_df = serialize_df(entries).unwrap();
 
@@ -9,7 +16,9 @@ pub fn process_batch(entries: &mut Vec<TxEntry>, main_df: &mut DataFrame, filena
 
     println!("{:?}", entries.len());
 
-    df_to_csv(main_df, filename).unwrap();
+    entries.clear();
+
+    dump_df(main_df, filename).unwrap();
 }
 
 // TODO: need to improve, thx perplexity
@@ -54,8 +63,19 @@ pub fn serialize_df(entries: &[TxEntry]) -> PolarsResult<DataFrame> {
     ])
 }
 
-fn df_to_csv(df: &mut DataFrame, filename: &str) -> PolarsResult<()> {
-    let file = std::fs::File::create(filename).unwrap();
+fn df_to_csv(df: &mut DataFrame, filename: &str) -> Result<(), FileError> {
+    let file = std::fs::File::create(filename).map_err(|_| FileError::FileWritingFailed)?;
 
-    CsvWriter::new(file).finish(df)
+    CsvWriter::new(file)
+        .finish(df)
+        .map_err(|_| FileError::CsvWritingFailed)
+}
+
+fn dump_df(df: &mut DataFrame, filename: &str) -> Result<(), FileError> {
+    let result = match filename {
+        _ if filename.ends_with(".csv") => df_to_csv(df, filename),
+        _ => Err(FileError::UnknownFileFormat),
+    };
+
+    result
 }
