@@ -1,4 +1,4 @@
-use polars::prelude::*;
+use polars::prelude::{CsvWriter, DataFrame, NamedFrom, PolarsResult, SerWriter, Series};
 
 use crate::tx_entry::TxEntry;
 
@@ -56,5 +56,6 @@ pub fn serialize_df(entries: &[TxEntry]) -> PolarsResult<DataFrame> {
 
 fn df_to_csv(df: &mut DataFrame, filename: &str) -> PolarsResult<()> {
     let file = std::fs::File::create(filename).unwrap();
+
     CsvWriter::new(file).finish(df)
 }
